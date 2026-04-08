@@ -106,14 +106,21 @@ DEEPSEEK_STOP_STREAM_URL = f"https://{DEEPSEEK_HOST}/api/v0/chat/stop_stream"
 DEEPSEEK_DELETE_SESSION_URL = f"https://{DEEPSEEK_HOST}/api/v0/chat_session/delete"
 BASE_HEADERS = {
     "Host": "chat.deepseek.com",
-    "User-Agent": "DeepSeek/1.0.13 Android/35",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     "Accept": "application/json",
-    "Accept-Encoding": "gzip",
+    "Accept-Encoding": "gzip, deflate, br",
     "Content-Type": "application/json",
-    "x-client-platform": "android",
-    "x-client-version": "1.3.0-auto-resume",
-    "x-client-locale": "zh_CN",
-    "accept-charset": "UTF-8",
+    "Origin": "https://chat.deepseek.com",
+    "Referer": "https://chat.deepseek.com/",
+    "Sec-Ch-Ua": '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+    "Sec-Ch-Ua-Mobile": "?0",
+    "Sec-Ch-Ua-Platform": '"Windows"',
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-origin",
+    "x-client-platform": "web",
+    "x-client-version": "1.0.0",
+    "x-client-locale": "zh-CN",
 }
 
 # ----------------------------------------------------------------------
@@ -178,6 +185,12 @@ def login_deepseek_via_account(account):
             status_code=500, detail="Account login failed: invalid JSON response"
         )
     # 校验响应数据格式是否正确
+    if data.get("code") != 0:
+        logger.error(f"[login_deepseek_via_account] 登录失败: {data}")
+        raise HTTPException(
+            status_code=500, detail=f"Account login failed: {data.get('msg', 'Unknown error')}"
+        )
+
     if (
         data.get("data") is None
         or data["data"].get("biz_data") is None
@@ -187,7 +200,10 @@ def login_deepseek_via_account(account):
         raise HTTPException(
             status_code=500, detail="Account login failed: invalid response format"
         )
-    new_token = data["data"]["biz_data"]["user"].get("token")
+
+    # 新的响应结构：data.biz_data.user.token
+    user_data = data["data"]["biz_data"]["user"]
+    new_token = user_data.get("token")
     if not new_token:
         logger.error(f"[login_deepseek_via_account] 登录响应中缺少 token: {data}")
         raise HTTPException(
@@ -2194,4 +2210,4 @@ def index(request: Request):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=5001)
+    uvicorn.run(app, host="0.0.0.0", port=50011)
